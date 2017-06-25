@@ -1,0 +1,7 @@
+{
+    "apiBaseUrl": "api.url/here",
+    "apiLogin": "api_login",
+    "apiPassword": "password",
+    "apiUserID": "42",
+    "dbPath": ".\/some\/path\/he\/re.db"
+}
