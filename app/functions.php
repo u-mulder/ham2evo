@@ -1,10 +1,11 @@
 <?php
 const CONFIG_FILE_PATH = './config.json';
+const LOOKUP_FILE_PATH = './lookup.dat';
 
 /**
- * Проверяем наличие конфига и наличие в нем нужных переменных
+ * Проверяем наличие конфигурационного файла и наличие в нем нужных параметров
  *
- * @return bool true - если с фалом все в порядке, в противном случае false
+ * @return bool true - если с файлом все в порядке, в противном случае false
  *
  * @author u_mulder <m264695502@gmail.com>
  */
@@ -45,11 +46,13 @@ function checkConfigFile()
 /**
  * Спрашиваем параметры и записываем их в конфигурационный файл
  *
+ * @param array $data Массив новых значений параметров
+ *
  * @return array Массив произошедших ошибок
  *
  * @author u_mulder <m264695502@gmail.com>
  */
-function saveConfig($data)
+function saveConfig(array $data)
 {
     $errs = [];
     $params = [];
@@ -84,7 +87,7 @@ function saveConfig($data)
  *
  * @author u_mulder <m264695502@gmail.com>
  */
-function getConfigKeys()    // TODO
+function getConfigKeys()
 {
     return [
         'apiBaseUrl' => [
@@ -103,16 +106,20 @@ function getConfigKeys()    // TODO
         'dbPath' => [
             'caption' => 'Путь к базе данных',
         ],
-        //'projectLookup' => '' // TODO
     ];
 }
 
 
 /**
+ * Получаем записи по фильтру `$filter`
+ *
+ * @param array $filter Фильтр с датами
+ *
+ * @return object Результаты фильтрации
  *
  * @author u_mulder <m264695502@gmail.com>
  */
-function getRecords($filter)
+function getRecords(array $filter)
 {
     $params = getConfigParams();
 
@@ -182,7 +189,7 @@ function getRecords($filter)
             if ($stmt) {
                 $stmt->setFetchMode(PDO::FETCH_ASSOC);
                 if ($stmt->execute(array_values($date_filter))) {
-                    $r->success = true;
+                    $lookUp = getCurrentLookUp();
 
                     /* Общий массив задач */
                     $tasks = [];
@@ -194,8 +201,9 @@ function getRecords($filter)
                             'date' => date('d.m.Y', strtotime($row['start_time'])),
                             'seconds' => $seconds,
                             'comment' => (string)$row['description'],
-                            'project_name' => $row['tag'],   // TODO
-                            //'project_id' => $data['project_id'],    // int
+                            'project_name' => $row['tag'],
+                            'project_id' => !empty($lookUp[$row['tag_id']]) ?
+                                $lookUp[$row['tag_id']] : false,
                         ];
 
                         $date = date('d.m.Y', strtotime($row['start_time']));
@@ -246,9 +254,17 @@ function getRecords($filter)
                                 $hours = round($task_data['seconds'] / 3600, 1);
                                 $r->hours_total += $hours;
                                 $tasks[$k]['items'][$t_id][$task_id]['hours'] = $hours;
+                                if (empty($tasks[$k]['items'][$t_id][$task_id]['comment'])) {
+                                    $tasks[$k]['items'][$t_id][$task_id]['comment'] = '-';
+                                }
+
+                                /* Теперь закодируем все в base64 чтобы отдавать с клиента такие же данные */
+                                $tasks[$k]['items'][$t_id][$task_id]['base64'] = base64_encode(json_encode($tasks[$k]['items'][$t_id][$task_id]));
                             }
                         }
                     }
+
+                    $r->success = true;
                     $r->records = array_values($tasks);
                 } else {
                     $err = $stmt->errorInfo();
@@ -258,6 +274,38 @@ function getRecords($filter)
                 $err = $dbh->errorInfo();
                 $r->errors[] = 'Ошибка подготовки запроса к БД: ' . $err[2];
             }
+        }
+    }
+
+    return $r;
+}
+
+
+/**
+ * Получаем текущие теги (проекты) из локальной БД
+ *
+ * @return object Объект с данными о проектах
+ *
+ * @author u_mulder <m264695502@gmail.com>
+ */
+function getTags()
+{
+    $params = getConfigParams();
+
+    $r = new stdClass;
+    $r->success = false;
+    $r->records = [];
+
+    $dbh = null;
+    try {
+        $dbh = new PDO('sqlite:' . $params->dbPath);
+    } catch (\Exception $e) {
+        $r->errors[] = 'Ошибка подключения к БД: ' . $e->getMessage();
+    }
+
+    if ($dbh) {
+        foreach ($dbh->query('SELECT id, name FROM tags ORDER BY name') as $row) {
+            $r->records[$row['id']] = $row['name'];
         }
     }
 
@@ -276,15 +324,98 @@ function getConfigParams()
 {
     $fc = file_get_contents(CONFIG_FILE_PATH);
     $decoded = json_decode($fc);
+
     return $decoded? $decoded : false;
+}
+
+
+/**
+ * Проверяем наличие файла соответствий проектов и наличия в нем какой-либо информации
+ *
+ * @return bool true - если с файлом все в порядке, в противном случае false
+ *
+ * @author u_mulder <m264695502@gmail.com>
+ */
+function checkLookupFile()
+{
+    $err = '';
+
+    if (!file_exists(LOOKUP_FILE_PATH)) {
+        $err = 'Файл отсутствует';
+    } else {
+        $fc = file_get_contents(LOOKUP_FILE_PATH);
+        if ($fc) {
+            $fc = unserialize($fc);
+            if (!is_array($fc) || !$fc) {
+                $err = 'Данных из файла недостаточно';
+            }
+        } else {
+            $err = 'Не удается прочитать содержимое файла';
+        }
+    }
+
+    return $err;
+}
+
+
+/**
+ * Получаем параметры соответствия локальных проектов и проектов в EVO
+ *
+ * @return array|false Параметры соответствия или false если они не установлены
+ *
+ * @author u_mulder <m264695502@gmail.com>
+ */
+function getCurrentLookUp()
+{
+    $fc = file_get_contents(LOOKUP_FILE_PATH);
+
+    return $fc? unserialize($fc) : false;
+}
+
+
+/**
+ * Сохраняем соответствие проектов БД/Evo
+ *
+ * @param int $tag_id ИД проекта в локальной БД
+ * @param int $evo_id ИД проекта в Evolution
+ *
+ * @return object Результат сохранения
+ *
+ * @author u_mulder <m264695502@gmail.com>
+ */
+function setProjectLookUp($tag_id, $evo_id)
+{
+    $r = new \stdClass;
+    $r->success = false;
+    $r->err = '';
+
+    $tag_id = (int)$tag_id;
+    $evo_id = (int)$evo_id;
+    if (0 < $tag_id && 0 < $evo_id) {
+        $curLookup = getCurrentLookUp();
+        if (!$curLookup) {
+            $curLookup = [];
+        }
+        $curLookup[$tag_id] = $evo_id;
+        if (file_put_contents(LOOKUP_FILE_PATH, serialize($curLookup))) {
+            $r->success = true;
+        } else {
+            $r->err = 'Не удалось сохранить значение';
+        }
+    } else {
+        $r->err = 'Указаны не все значения';
+    }
+
+    return $r;
 }
 
 
 /**
  * Получаем ИД задачи из описания
  *
- * @param string $str
- * @return string
+ * @param string $str Описание задачи
+ *
+ * @return string ИД задачи или пустая строка если ИД нет.
  *
  * @author u_mulder <m264695502@gmail.com>
  */

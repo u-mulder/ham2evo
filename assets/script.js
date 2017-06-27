@@ -2,6 +2,7 @@ $( document ).ready( function() {
 
     var toast = document.getElementById('toast');
     var isInvalidClass = "is-invalid";
+    var actionUrl = "/handler.php";
 
     function showToast(msg) {
         toast.MaterialSnackbar.showSnackbar({ message: msg });
@@ -83,6 +84,9 @@ $( document ).ready( function() {
                                 var spanSize = 6;
                                 var rowIndex = 0;
                                 var rec;
+                                var projectStr = "";
+                                var noProjIDStr = "<i class='material-icons' title='Отсутствует ИД проекта EVO'>warning</i>";
+                                var rowChecked;
 
                                 $.each(data.records, function (i, v) {
                                     tableContents += "<tr>"
@@ -93,14 +97,18 @@ $( document ).ready( function() {
                                         for (var subkey in v.items[ k ] ) {
                                             rec = v.items[ k ][ subkey ];
                                             rowIndex++;
+
+                                            projectStr = rec.project_name + " / " + (rec.project_id? rec.project_id : noProjIDStr);
+                                            rowChecked = rec.project_id? "checked" : "disabled";
+
                                             tableContents += "<tr>"
-                                                + "<td><label class='mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect mdl-data-table__select' for='row" + rowIndex + "'>"
-                                                + "<input type='checkbox' name='to_evo[]' id='row" + rowIndex +"' class='mdl-checkbox__input' checked /></label></td>"
+                                                + "<td><label class='mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect mdl-data-table__select' for='row" + rowIndex + "' title='Передать в EVO'>"
+                                                + "<input type='checkbox' name='to_evo[]' value='" + rec.base64 + "' id='row" + rowIndex +"' class='mdl-checkbox__input' " + rowChecked + " /></label></td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.name + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.date + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.hours + " / " + rec.seconds + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.comment + "</td>"
-                                                + "<td class='mdl-data-table__cell--non-numeric'>" + rec.project_name + "</td>"
+                                                + "<td class='mdl-data-table__cell--non-numeric'>" + projectStr + "</td>"
                                                 + "</tr>";
                                         }
                                     }
@@ -152,9 +160,83 @@ $( document ).ready( function() {
     } );
 
     $( "#send_records" ).on( "click", function () {
-        alert( "Функционал в разработке" );
+        var this$ = $ ( this );
+        var spinner$ = $( "#records_spinner" );
+        var rowsData = { records: {} };
+        var checked$ = $( "#records_table" ).find( "input:checked" );
+
+        spinner$.show();
+        this$.hide();
+        checked$.each(function (i, v) {
+            rowsData.records[ v.id ] = v.value;
+        } );
+
+        $.ajax( {
+            url: actionUrl,
+            data: rowsData,
+            dataType: "json",
+            method: "POST",
+            success: function( data ) {
+                spinner$.hide();
+                this$.show();
+
+                checked$.each(function (i, v) {
+                    var td$ = $( v ).closest( "td" );
+                    if ( typeof data.failed_ids[ v.id ] != "undefined" ) {
+                        td$.html( "<i class='material-icons' title='" + data.failed_ids[ v.id ] + "'>warning</i>" );
+                    } else {
+                        td$.html( "<i class='material-icons' title='Успешно передано в EVO'>done</i>" );
+                    }
+                } );
+            },
+            error: function() {
+                spinner$.hide();
+                this$.show();
+            },
+        } );
 
         return false;
+    } );
+
+    $( ".js-set-lookup" ).on( "click", function () {
+        var this$ = $ ( this );
+        var evoId = $( "#" + this.id + "_selector" ).val();
+        var tagId = this$.data( "tag-id" );
+        var spinner$ = $( "#" + this.id + "_spinner" );
+
+        this$.attr( "disabled", "disabled" ).hide();
+        spinner$.show();
+        $.ajax( {
+            url: actionUrl,
+            data: { tId: tagId, eId: evoId },
+            dataType: "json",
+            method: "POST",
+            success: function( data ) {
+                spinner$.hide();
+                if ( data.success ) {
+                    this$.find( "i" ).text( "done" );
+                } else {
+                    this$.find( "i" ).text( "error_outline" );
+                    this$.removeAttr( "disabled" );
+                }
+                this$.show();
+            },
+            error: function() {
+                spinner$.hide();
+                this$.show();
+            }
+        } );
+
+        return false;
+    } );
+
+    $( ".js-selector-lookup" ).on( "change", function() {
+        var this$ = $ ( this );
+        var tagId = this$.data( "tag-id" );
+        var tagBtn = $( "#tag_" + tagId );
+
+        $( "#tag_" + tagId ).removeAttr( "disabled" );
+        $( "#tag_" + tagId ).find( "i" ).text( "send" );
     } );
 
 } );
