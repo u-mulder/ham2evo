@@ -1,2 +1,7 @@
 # ham2evo
-Web-tool to pass hasmster data to Evolution
+Web-interfaced tool to pass hamster data to Evolution
+
+### Requirements
+
+ - local hamster sqlite database
+ - `pdo_sqlite` extension to process queries
