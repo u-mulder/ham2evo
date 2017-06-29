@@ -72,6 +72,9 @@ abstract class DbFactory
     public function query($q)
     {
         $this->results = $this->dbh->query($q);
+        if (!$this->results) {
+            $this->setError($this->getErrorString());
+        }
     }
 
 
@@ -85,6 +88,9 @@ abstract class DbFactory
     public function prepare($q)
     {
         $this->stmt = $this->dbh->prepare($q);
+        if (!$this->stmt) {
+            $this->setError($this->getErrorString());
+        }
     }
 
 
@@ -95,7 +101,13 @@ abstract class DbFactory
      */
     public function executeStmt()
     {
-        $r = $this->stmt->execute();
+        $r = true;
+
+        $this->results = $this->stmt->execute();
+        if (!$this->results) {
+            $this->setError($this->getErrorString());
+            $r = false;
+        }
 
         return $r;
     }
@@ -103,6 +115,8 @@ abstract class DbFactory
 
     /**
      * Функция привязки параметров подготовленного запроса
+     *
+     * Пока что ошибки данной функции не обрабатываются.
      *
      * @param int $index Индекс параметра
      * @param mixed $value Значение параметра
@@ -154,13 +168,27 @@ abstract class DbFactory
      */
     abstract public function fetchStmtResult($fetchMode);
 
-
     /**
-     * Абстрактная функция получения ошибки при подготовке / выполнении запроса
+     * Абстрактная функция получения сообщения об ошибке
+     *
+     * @param int $fetchMode Режим получения результата
      *
      * @author u_mulder <m264695502@gmail.com>
      */
-    abstract public function setError();
+    abstract public function getErrorString();
+
+
+    /**
+     * Функция установки ошибки при подготовке / выполнении запроса
+     *
+     * @param string $err_str Текст ошибки
+     *
+     * @author u_mulder <m264695502@gmail.com>
+     */
+    public function setError($err_str)
+    {
+        $this->last_error = $err_str;
+    }
 
 
     /**
@@ -174,6 +202,7 @@ abstract class DbFactory
 
 
     /**
+     * Уничтожаем соединение с БД
      *
      * @author u_mulder <m264695502@gmail.com>
      */
@@ -201,7 +230,11 @@ class PDOWrapper extends DbFactory
      */
     public function __construct($db_path)
     {
-        $this->dbh = new \PDO('sqlite:' . $db_path);
+        try {
+            $this->dbh = new \PDO('sqlite:' . $db_path);
+        } catch (\Exception $e) {
+            $this->setError('Ошибка соединения с БД: ' . $e->GetMessage());
+        }
     }
 
 
@@ -242,16 +275,25 @@ class PDOWrapper extends DbFactory
 
 
     /**
+     * Функция получения текста ошибки
+     *
+     * @return string Текст ошибки или пустая строка
      *
      * @author u_mulder <m264695502@gmail.com>
      */
-    public function setError()
+    public function getErrorString()
     {
-        // TODO
+        $err = $this->dbh->errorInfo();
+        return !empty($err[2]) ? $err[2] : '';
     }
 
 
     /**
+     * Функция возвращает сооветствующее значение типа данных
+     *
+     * @param string $type Тип данных в виде строки
+     *
+     * @return int Тип данных в виде значения константы класса
      *
      * @author u_mulder <m264695502@gmail.com>
      */
@@ -294,7 +336,11 @@ class SqliteWrapper extends DbFactory
      */
     public function __construct($db_path)
     {
-        $this->dbh = new \SQLite3($db_path);
+        try {
+            $this->dbh = new \SQLite3($db_path);
+        } catch (\Exception $e) {
+            $this->setError('Ошибка соединения с БД: ' . $e->GetMessage());
+        }
     }
 
 
@@ -317,19 +363,6 @@ class SqliteWrapper extends DbFactory
 
 
     /**
-     *
-     * @author u_mulder <m264695502@gmail.com>
-     */
-    public function executeStmt()
-    {
-        $this->results = $this->stmt->execute();
-
-        return true;    // TODO fix
-    }
-
-
-
-    /**
      * Получаем следующий результат запроса подготовленного выражения
      *
      * @param int $fetchMode Режим получения результата
@@ -348,16 +381,24 @@ class SqliteWrapper extends DbFactory
 
 
     /**
+     * Функция получения текста ошибки
+     *
+     * @return string Текст ошибки или пустая строка
      *
      * @author u_mulder <m264695502@gmail.com>
      */
-    public function setError()
+    public function getErrorString()
     {
-        // TODO
+        return $this->dbh->lastErrorMsg();
     }
 
 
     /**
+     * Функция возвращает сооветствующее значение типа данных
+     *
+     * @param string $type Тип данных в виде строки
+     *
+     * @return int Тип данных в виде значения константы класса
      *
      * @author u_mulder <m264695502@gmail.com>
      */

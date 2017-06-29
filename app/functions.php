@@ -184,7 +184,8 @@ function getRecords(array $filter)
                 ORDER BY f.start_time ASC';
 
             $dbh->prepare($q);
-            /*if ($stmt)*/ {
+            $le = $dbh->getError();
+            if (!$le) {
                 $dbh
                     ->bindValue(1, $date_filter['from'], 'string')
                     ->bindValue(2, $date_filter['to'], 'string');
@@ -271,10 +272,9 @@ function getRecords(array $filter)
                     //$err = $stmt->errorInfo();
                     //$r->errors[] = 'Ошибка выполнения запроса к БД: ' . $err[2];
                 }
-            } /*else {
-                $err = $dbh->errorInfo();
-                $r->errors[] = 'Ошибка подготовки запроса к БД: ' . $err[2];
-            }*/
+            } else {
+                $r->errors[] = 'Ошибка подготовки запроса к БД: ' . $le;
+            }
         }
     }
 
@@ -296,15 +296,27 @@ function getTags()
     $r = new stdClass;
     $r->success = false;
     $r->records = [];
+    $err_tpl = '<div class="mdl-card__supporting-text">'
+        . '<i class="material-icons">error_outline</i> %s</div>';
 
-    // TODO try-catch?
     $dbh = DbFactory::init($params);
+    $le = $dbh->getError();
 
-    if ($dbh) {
+    if (!$le) {
         $dbh->query('SELECT id, name FROM tags ORDER BY name');
-        while ($row = $dbh->fetchResult()) {
-            $r->records[$row['id']] = $row['name'];
+
+        $le = $dbh->getError();
+        if (!$le) {
+            while ($row = $dbh->fetchResult()) {
+                $r->records[$row['id']] = $row['name'];
+            }
+        } else {
+            echo sprintf($err_tpl, 'Ошибка запроса: ' . $le);
+            die();
         }
+    } else {
+        echo sprintf($err_tpl, $le);
+        die();
     }
 
     return $r;
