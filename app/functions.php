@@ -199,10 +199,10 @@ function getRecords(array $filter)
                         /* Начальные данные таска */
                         $seconds = strtotime($row['end_time']) - strtotime($row['start_time']);
                         $task_data = [
-                            'name' => $row['name'],
+                            'name' => $row['name'] . " " . (string)$row['description'],
                             'date' => date('d.m.Y', strtotime($row['start_time'])),
                             'seconds' => $seconds,
-                            'comment' => (string)$row['description'],
+                            'comment' => $row['name'],
                             'project_name' => $row['tag'],
                             'project_id' => !empty($lookUp[$row['tag_id']]) ?
                                 $lookUp[$row['tag_id']] : false,
@@ -212,7 +212,8 @@ function getRecords(array $filter)
                         $tag_id = $row['tag_id'];
                         $task_id = getTaskId($row['name']);
                         if (empty($task_id)) {
-                            $task_id = 'task-none';
+                            $task_id = $row['name'];
+                            $task_data["comment"] = "";
                         }
 
                         /* Организуем первый уровень по ДАТЕ */
@@ -236,9 +237,6 @@ function getRecords(array $filter)
                              * Если данные по такой задаче в этот день по этому
                              * проекту уже есть, то добавим к ним текущие
                              */
-                            if (!empty($task_data['comment'])) {
-                                $tasks[$date]['items'][$tag_id][$task_id]['comment'] .= "\n" . $task_data['comment'];
-                            }
                             $tasks[$date]['items'][$tag_id][$task_id]['seconds'] += $task_data['seconds'];
                         }
                     }

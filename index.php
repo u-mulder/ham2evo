@@ -95,12 +95,12 @@ if ($conf_err || $lookUp_err) {?>
                     </div>
                     <form id="filter_form" action="/handler.php" method="post">
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:480px; margin:0 20px;">
-                            <input class="mdl-textfield__input" type="text" id="dateFrom" name="filter[dateFrom]" value="" placeholder="dd.mm.yyyy" maxlength="10">
+                            <input class="mdl-textfield__input" type="date" id="dateFrom" name="filter[dateFrom]" value="" placeholder="dd.mm.yyyy" maxlength="10">
                             <label class="mdl-textfield__label" for="dateFrom">Начало периода</label>
                             <span class="mdl-textfield__error">Введите хотя бы одну из дат</span>
                         </div>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:480px; margin:0 20px;">
-                            <input class="mdl-textfield__input" type="text" id="dateTo" name="filter[dateTo]" value="" placeholder="dd.mm.yyyy" maxlength="10">
+                            <input class="mdl-textfield__input" type="date" id="dateTo" name="filter[dateTo]" value="" placeholder="dd.mm.yyyy" maxlength="10">
                             <label class="mdl-textfield__label" for="dateTo">Конец периода</label>
                             <span class="mdl-textfield__error">Введите хотя бы одну из дат</span>
                         </div>
