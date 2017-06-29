@@ -1,4 +1,6 @@
 <?php
+require_once './app/dbf.php';
+
 const CONFIG_FILE_PATH = './config.json';
 const LOOKUP_FILE_PATH = './lookup.dat';
 
@@ -106,6 +108,9 @@ function getConfigKeys()
         'dbPath' => [
             'caption' => 'Путь к базе данных',
         ],
+        'dbDriver' => [
+            'caption' => 'Драйвер базы данных',
+        ],
     ];
 }
 
@@ -129,12 +134,7 @@ function getRecords(array $filter)
     $r->records = [];
     $r->hours_total = 0;
 
-    $dbh = null;
-    try {
-        $dbh = new PDO('sqlite:' . $params->dbPath);
-    } catch (\Exception $e) {
-        $r->errors[] = 'Ошибка подключения к БД: ' . $e->getMessage();
-    }
+    $dbh = DbFactory::init($params);
 
     if ($dbh) {
         $date_filter = [
@@ -183,17 +183,18 @@ function getRecords(array $filter)
                     AND strftime("%s", f.end_time) <= strftime("%s", ?)
                 ORDER BY f.start_time ASC';
 
-            // СВЯЗЬ ПРОЕКТОВ из ево!!!
+            $dbh->prepare($q);
+            /*if ($stmt)*/ {
+                $dbh
+                    ->bindValue(1, $date_filter['from'], 'string')
+                    ->bindValue(2, $date_filter['to'], 'string');
 
-            $stmt = $dbh->prepare($q);
-            if ($stmt) {
-                $stmt->setFetchMode(PDO::FETCH_ASSOC);
-                if ($stmt->execute(array_values($date_filter))) {
+                if ($dbh->executeStmt()) {
                     $lookUp = getCurrentLookUp();
 
                     /* Общий массив задач */
                     $tasks = [];
-                    while ($row = $stmt->fetch()) {
+                    while ($row = $dbh->fetchStmtResult()) {
                         /* Начальные данные таска */
                         $seconds = strtotime($row['end_time']) - strtotime($row['start_time']);
                         $task_data = [
@@ -267,13 +268,13 @@ function getRecords(array $filter)
                     $r->success = true;
                     $r->records = array_values($tasks);
                 } else {
-                    $err = $stmt->errorInfo();
-                    $r->errors[] = 'Ошибка выполнения запроса к БД: ' . $err[2];
+                    //$err = $stmt->errorInfo();
+                    //$r->errors[] = 'Ошибка выполнения запроса к БД: ' . $err[2];
                 }
-            } else {
+            } /*else {
                 $err = $dbh->errorInfo();
                 $r->errors[] = 'Ошибка подготовки запроса к БД: ' . $err[2];
-            }
+            }*/
         }
     }
 
@@ -296,15 +297,12 @@ function getTags()
     $r->success = false;
     $r->records = [];
 
-    $dbh = null;
-    try {
-        $dbh = new PDO('sqlite:' . $params->dbPath);
-    } catch (\Exception $e) {
-        $r->errors[] = 'Ошибка подключения к БД: ' . $e->getMessage();
-    }
+    // TODO try-catch?
+    $dbh = DbFactory::init($params);
 
     if ($dbh) {
-        foreach ($dbh->query('SELECT id, name FROM tags ORDER BY name') as $row) {
+        $dbh->query('SELECT id, name FROM tags ORDER BY name');
+        while ($row = $dbh->fetchResult()) {
             $r->records[$row['id']] = $row['name'];
         }
     }

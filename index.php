@@ -50,9 +50,23 @@ if ($conf_err || $lookUp_err) {?>
                     <form id="settings_form" action="/handler.php" method="post">
 <?php   foreach ($keys as $k => $v) {?>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:480px; margin:0 20px;">
+<?php       if ('dbDriver' != $k) {?>
                             <input class="mdl-textfield__input" type="text" id="<?=$k?>" name="config[<?=$k?>]" value="<?=!empty($v['default']) ? $v['default'] : ''?>">
                             <label class="mdl-textfield__label" for="<?=$k?>"><?=$v['caption']?></label>
                             <span class="mdl-textfield__error">Укажите значение</span>
+<?php       } else {?>
+                            <div class="mdl-card__supporting-text">
+                                <label class="mdl-textfield__label"><?=$v['caption']?></label>
+                            </div>
+                            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="driver_pdo">
+                                <input type="radio" id="driver_pdo" class="mdl-radio__button" name="config[<?=$k?>]" value="pdo" checked>
+                                <span class="mdl-radio__label">PDO</span>
+                            </label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="driver_sqlite">
+                                <input type="radio" id="driver_sqlite" class="mdl-radio__button" name="config[<?=$k?>]" value="sqlite">
+                                <span class="mdl-radio__label">SQLite</span>
+                            </label>
+<?php       }?>
                         </div>
 <?php   }?>
                         <input type="submit" name="save-settings" value="Сохранить настройки" class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" style="margin:0 10px 10px;" />
@@ -72,7 +86,7 @@ if ($conf_err || $lookUp_err) {?>
                 </div>
 <?php
 }?>
-                <div class="mdl-card mdl-shadow--2dp" style="width:550px;margin: 10px auto;<?=$err ? ' display:none;' : ''?>" id="filter">
+                <div class="mdl-card mdl-shadow--2dp" style="width:550px;margin: 10px auto;<?=($conf_err || $lookUp_err) ? ' display:none;' : ''?>" id="filter">
                     <div class="mdl-card__title">
                         <h2 class="mdl-card__title-text">Временной период</h2>
                     </div>
