@@ -169,7 +169,7 @@ class EvoApi
      */
     protected function request($url, $data, $type)
     {
-        $ch = curl_init('http://' . $this->params->apiBaseUrl . $url);
+        $ch = curl_init('https://' . $this->params->apiBaseUrl . $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         if ($type == self::REQUEST_TYPE_POST) {
             curl_setopt($ch, CURLOPT_POST, true);
