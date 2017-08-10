@@ -105,6 +105,16 @@ function getConfigKeys()
         'apiUserID' => [
             'caption' => 'ИД пользователя в EVO',
         ],
+        'redmineApiBaseUrl' => [
+            'caption' => 'Redmine API URL',
+            'default' => 'redmine.doma.in',
+        ],
+        'redmineApiKey' => [
+            'caption' => 'Redmine API Key',
+        ],
+        'redmineActivityId' => [
+            'caption' => 'Redmine Activity ID',
+        ],
         'dbPath' => [
             'caption' => 'Путь к базе данных',
         ],
@@ -206,6 +216,7 @@ function getRecords(array $filter)
                             'project_name' => $row['tag'],
                             'project_id' => !empty($lookUp[$row['tag_id']]) ?
                                 $lookUp[$row['tag_id']] : false,
+                            'rm_issue_id' => false,
                         ];
 
                         $date = date('d.m.Y', strtotime($row['start_time']));
@@ -213,7 +224,13 @@ function getRecords(array $filter)
                         $task_id = getTaskId($row['name']);
                         if (empty($task_id)) {
                             $task_id = $row['name'];
-                            $task_data["comment"] = "";
+                            $task_data["comment"] = '';
+                        } else {
+                            /* Из $task_id извлекаем номер редмайн-задачи */
+                            $task_data['rm_issue_id'] = substr($task_id, 1);
+                            $task_data['rm_issue_link']
+                                = 'https://' . $params->redmineApiBaseUrl
+                                    . '/issues/' . $task_data['rm_issue_id'];
                         }
 
                         /* Организуем первый уровень по ДАТЕ */
@@ -267,8 +284,8 @@ function getRecords(array $filter)
                     $r->success = true;
                     $r->records = array_values($tasks);
                 } else {
-                    //$err = $stmt->errorInfo();
-                    //$r->errors[] = 'Ошибка выполнения запроса к БД: ' . $err[2];
+                    $err = $stmt->errorInfo();
+                    $r->errors[] = 'Ошибка выполнения запроса к БД: ' . $err[2];
                 }
             } else {
                 $r->errors[] = 'Ошибка подготовки запроса к БД: ' . $le;

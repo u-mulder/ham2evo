@@ -4,7 +4,7 @@ require_once './app/functions.php';?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Перенос часов в EVO</title>
+    <title>Перенос часов в EVO + Redmine</title>
     <meta http-equiv="content-type" content="text/html;charset=utf-8" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
@@ -132,7 +132,14 @@ if ($conf_err || $lookUp_err) {?>
                     <table class="mdl-data-table mdl-js-data-table mdl-shadow--1dp" style="width:98%; margin: 5px auto;" id="records_table">
                         <thead>
                             <tr>
-                                <th>&nbsp;</th>
+                                <th>
+                                    <span id="th_evo">Evo</span>
+                                    <div class="mdl-tooltip mdl-tooltip--large" for="th_evo">Данные для отправки в Evo</div>
+                                </th>
+                                <th>
+                                    <span id="th_redmine">Redmine</span>
+                                    <div class="mdl-tooltip mdl-tooltip--large" for="th_redmine">Данные для отправки в Redmine</div>
+                                </th>
                                 <th class="mdl-data-table__cell--non-numeric">Формулировка</th>
                                 <th class="mdl-data-table__cell--non-numeric">Дата</th>
                                 <th class="mdl-data-table__cell--non-numeric">
@@ -141,21 +148,23 @@ if ($conf_err || $lookUp_err) {?>
                                 </th>
                                 <th class="mdl-data-table__cell--non-numeric">Комментарий</th>
                                 <th class="mdl-data-table__cell--non-numeric">
-                                    <span id="th_project">Проект</span>
+                                    <span id="th_project">Evo-Проект</span>
                                     <div class="mdl-tooltip mdl-tooltip--large" for="th_project">(Название / EVO_ID)</div>
                                 </th>
+                                <th class="mdl-data-table__cell--non-numeric">Redmine-задача</th>
                             </tr>
                         </thead>
                         <tfoot>
                             <tr>
-                                <td colspan="6">
+                                <td colspan="8">
                                     <div class="mdl-layout-spacer"></div>
                                     <span>Общее количество часов: <b id="hours_total"></b></span>&nbsp;&nbsp;&nbsp;
                                     <button class="mdl-button mdl-js-button" id="send_records" style="width:60px;">
                                         <i class="material-icons">publish</i>
                                     </button>
-                                    <div class="mdl-tooltip mdl-tooltip--large" for="send_records">Отправить в EVO</div>
-                                    <div class="mdl-spinner mdl-js-spinner is-active" style="display:none" id="records_spinner"></div>
+                                    <div class="mdl-tooltip mdl-tooltip--large" for="send_records">Отправить в EVO/Redmine</div>
+                                    <div class="mdl-spinner mdl-js-spinner is-active" style="display:none" id="evo_records_spinner"></div>
+                                    <div class="mdl-spinner mdl-js-spinner is-active" style="display:none" id="redmine_records_spinner"></div>
                                 </td>
                             </tr>
                         </tfoot>

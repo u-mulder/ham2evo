@@ -81,11 +81,12 @@ $( document ).ready( function() {
 
                             if ( 0 < data.records.length ) {
                                 $( "#records_none" ).hide();
-                                var spanSize = 6;
+                                var spanSize = 8;
                                 var rowIndex = 0;
                                 var rec;
                                 var projectStr = "";
                                 var noProjIDStr = "<i class='material-icons' title='Отсутствует ИД проекта EVO'>warning</i>";
+                                var noIssueIDStr = "<i class='material-icons' title='Отсутствует номер задачи Redmine'>warning</i>";
                                 var rowChecked;
 
                                 $.each(data.records, function (i, v) {
@@ -96,19 +97,25 @@ $( document ).ready( function() {
                                     for (var k in v.items ) {
                                         for (var subkey in v.items[ k ] ) {
                                             rec = v.items[ k ][ subkey ];
+
                                             rowIndex++;
 
                                             projectStr = rec.project_name + " / " + (rec.project_id? rec.project_id : noProjIDStr);
-                                            rowChecked = rec.project_id? "checked" : "disabled";
+                                            rowEvoChecked = rec.project_id ? "checked" : "disabled";
+                                            rowRedmineChecked = rec.rm_issue_id ? "checked" : "disabled";
+                                            rowRedmineContent = rec.rm_issue_id ? ("<a href='" + rec.rm_issue_link + "' class='mdl-navigation__link' title='Ссылка на задачу " + rec.rm_issue_id + "' target='_blank'>" + rec.rm_issue_id + "&nbsp;<i class='material-icons'>forward</i></a>") : noIssueIDStr;
 
                                             tableContents += "<tr>"
                                                 + "<td><label class='mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect mdl-data-table__select' for='row" + rowIndex + "' title='Передать в EVO'>"
-                                                + "<input type='checkbox' name='to_evo[]' value='" + rec.base64 + "' id='row" + rowIndex +"' class='mdl-checkbox__input' " + rowChecked + " /></label></td>"
+                                                + "<input type='checkbox' name='to_evo[]' value='" + rec.base64 + "' id='evo-row" + rowIndex +"' class='mdl-checkbox__input' " + rowEvoChecked + " /></label></td>"
+                                                + "<td><label class='mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect mdl-data-table__select' for='row" + rowIndex + "' title='Передать в Redmine'>"
+                                                + "<input type='checkbox' name='to_redmine[]' value='" + rec.base64 + "' id='redmine-row" + rowIndex +"' class='mdl-checkbox__input' " + rowRedmineChecked + " /></label></td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.name + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.date + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.hours + " / " + rec.seconds + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + rec.comment + "</td>"
                                                 + "<td class='mdl-data-table__cell--non-numeric'>" + projectStr + "</td>"
+                                                + "<td class='mdl-data-table__cell--non-numeric'>" + rowRedmineContent + "</td>"
                                                 + "</tr>";
                                         }
                                     }
@@ -161,36 +168,76 @@ $( document ).ready( function() {
 
     $( "#send_records" ).on( "click", function () {
         var this$ = $ ( this );
-        var spinner$ = $( "#records_spinner" );
-        var rowsData = { records: {} };
+        var evoSpinner$ = $( "#evo_records_spinner" );
+        var redmineSpinner$ = $( "#redmine_records_spinner" );
+        var rowsData = {
+            evo_records: {},
+            redmine_records: {}
+        };
         var checked$ = $( "#records_table" ).find( "input:checked" );
 
-        spinner$.show();
+        evoSpinner$.show();
+        redmineSpinner$.show();
         this$.hide();
+
         checked$.each(function (i, v) {
-            rowsData.records[ v.id ] = v.value;
+            if ( v.name == 'to_evo[]' ) {
+                rowsData.evo_records[ v.id ] = v.value;
+            } else {
+                rowsData.redmine_records[ v.id ] = v.value;
+            }
         } );
 
+        // Sending Evo-data
         $.ajax( {
             url: actionUrl,
-            data: rowsData,
+            data: { evo_records: rowsData.evo_records },
             dataType: "json",
             method: "POST",
             success: function( data ) {
-                spinner$.hide();
+                evoSpinner$.hide();
                 this$.show();
 
                 checked$.each(function (i, v) {
                     var td$ = $( v ).closest( "td" );
-                    if ( typeof data.failed_ids[ v.id ] != "undefined" ) {
-                        td$.html( "<i class='material-icons' title='" + data.failed_ids[ v.id ] + "'>warning</i>" );
-                    } else {
-                        td$.html( "<i class='material-icons' title='Успешно передано в EVO'>done</i>" );
+                    if (v.name == 'to_evo[]') {
+                        if ( typeof data.failed_ids[ v.id ] != "undefined" ) {
+                            td$.html( "<i class='material-icons' title='" + data.failed_ids[ v.id ] + "'>warning</i>" );
+                        } else {
+                            td$.html( "<i class='material-icons' title='Успешно передано в EVO'>done</i>" );
+                        }
                     }
                 } );
             },
             error: function() {
-                spinner$.hide();
+                evoSpinner$.hide();
+                this$.show();
+            },
+        } );
+
+        // Sending Redmine-data
+        $.ajax( {
+            url: actionUrl,
+            data: { redmine_records: rowsData.redmine_records },
+            dataType: "json",
+            method: "POST",
+            success: function( data ) {
+                redmineSpinner$.hide();
+                this$.show();
+
+                checked$.each(function (i, v) {
+                    var td$ = $( v ).closest( "td" );
+                    if (v.name == 'to_redmine[]') {
+                        if ( typeof data.failed_ids[ v.id ] != "undefined" ) {
+                            td$.html( "<i class='material-icons' title='" + data.failed_ids[ v.id ] + "'>warning</i>" );
+                        } else {
+                            td$.html( "<i class='material-icons' title='Успешно передано в Redmine'>done</i>" );
+                        }
+                    }
+                } );
+            },
+            error: function() {
+                redmineSpinner$.hide();
                 this$.show();
             },
         } );
