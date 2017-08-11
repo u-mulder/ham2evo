@@ -35,6 +35,7 @@ require_once './app/functions.php';?>
 <?php
 $conf_err = checkConfigFile();
 $lookUp_err = checkLookupFile();
+$params = getConfigParams();
 if ($conf_err || $lookUp_err) {?>
                 <div class="demo-card-wide mdl-card mdl-shadow--2dp" style="width:550px;margin: 10px auto;" id="settings">
                     <div class="mdl-card__title">
@@ -50,20 +51,25 @@ if ($conf_err || $lookUp_err) {?>
                     <form id="settings_form" action="/handler.php" method="post">
 <?php   foreach ($keys as $k => $v) {?>
                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label" style="width:480px; margin:0 20px;">
-<?php       if ('dbDriver' != $k) {?>
-                            <input class="mdl-textfield__input" type="text" id="<?=$k?>" name="config[<?=$k?>]" value="<?=!empty($v['default']) ? $v['default'] : ''?>">
+<?php       if ('dbDriver' != $k) {
+                $value = !empty($v['default']) ? $v['default'] : '';
+                if (!empty($params->$k)) {
+                    $value = $params->$k;
+                }?>
+                            <input class="mdl-textfield__input" type="text" id="<?=$k?>" name="config[<?=$k?>]" value="<?=htmlspecialchars($value)?>">
                             <label class="mdl-textfield__label" for="<?=$k?>"><?=$v['caption']?></label>
                             <span class="mdl-textfield__error">Укажите значение</span>
-<?php       } else {?>
+<?php       } else {
+                $value = !empty($params->$k) ? $params->$k : 'pdo';?>
                             <div class="mdl-card__supporting-text">
                                 <label class="mdl-textfield__label"><?=$v['caption']?></label>
                             </div>
                             <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="driver_pdo">
-                                <input type="radio" id="driver_pdo" class="mdl-radio__button" name="config[<?=$k?>]" value="pdo" checked>
+                                <input type="radio" id="driver_pdo" class="mdl-radio__button" name="config[<?=$k?>]" value="pdo"<?=$value == 'pdo'? ' checked' : ''?>>
                                 <span class="mdl-radio__label">PDO</span>
                             </label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="driver_sqlite">
-                                <input type="radio" id="driver_sqlite" class="mdl-radio__button" name="config[<?=$k?>]" value="sqlite">
+                                <input type="radio" id="driver_sqlite" class="mdl-radio__button" name="config[<?=$k?>]" value="sqlite"<?=$value == 'sqlite'? ' checked' : ''?>>
                                 <span class="mdl-radio__label">SQLite</span>
                             </label>
 <?php       }?>
