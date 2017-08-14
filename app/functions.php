@@ -1,9 +1,4 @@
 <?php
-require_once './app/dbf.php';
-
-const CONFIG_FILE_PATH = './config.json';
-const LOOKUP_FILE_PATH = './lookup.dat';
-
 /**
  * Проверяем наличие конфигурационного файла и наличие в нем нужных параметров
  *

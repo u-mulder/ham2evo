@@ -1,7 +1,5 @@
 <?php
-require_once './app/functions.php';
-require_once './app/evoapi.php';
-require_once './app/redmineapi.php';
+require_once './app/init.php';
 
 $r = new stdClass;
 
@@ -34,7 +32,6 @@ if (!empty($_POST)) {
                 }
             }
             break;
-
 
         case !empty($_POST['redmine_records']):
             $params = getConfigParams();

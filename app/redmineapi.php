@@ -1,54 +1,29 @@
 <?php
 /**
- * Класс для взаимодействия с api Evo
+ * Класс для взаимодействия с api Redmine
  *
  * @author u_mulder <m264695502@gmail.com>
  */
-class RedmineApi
+class RedmineApi extends BaseApi
 {
 
     /**
+     * @var string Название заголовка для передачи ключа
      *
      * @author u_mulder <m264695502@gmail.com>
      */
     const API_KEY_HEADER_NAME = 'X-Redmine-API-Key';
 
     /**
-     * @var string GET request type
+     * Добавляем запись о затраченном времени
+     *
+     * @param array $data данные о времени
+     *
+     * @return string $err Строка с сообщением об ошибке или пустая строка, если ошибок нет
      *
      * @author u_mulder <m264695502@gmail.com>
      */
-    const REQUEST_TYPE_GET = 'get';
-
-    /**
-     * @var string POST request type
-     *
-     * @author u_mulder <m264695502@gmail.com>
-     */
-    const REQUEST_TYPE_POST = 'post';
-
-    /**
-     * @var object Параметры для работы с API
-     *
-     * @author u_mulder <m264695502@gmail.com>
-     */
-    protected $params;
-
-    /**
-     *
-     * @author u_mulder <m264695502@gmail.com>
-     */
-    public function __construct(stdClass $params)
-    {
-        $this->params = $params;
-    }
-
-
-    /**
-     *
-     * @author u_mulder <m264695502@gmail.com>
-     */
-    public function addTimeEntry($data)
+    public function addTimeEntry(array $data)
     {
         $err = '';
 

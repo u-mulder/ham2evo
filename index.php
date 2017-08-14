@@ -1,6 +1,5 @@
 <?php
-//error_reporting(E_ALL);
-require_once './app/functions.php';?>
+require_once './app/init.php';?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -14,7 +13,7 @@ require_once './app/functions.php';?>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
         <header class="mdl-layout__header">
             <div class="mdl-layout__header-row">
-                <span class="mdl-layout-title">Перенос часов в EVO</span>
+                <span class="mdl-layout-title">Перенос часов в Evo/Redmine</span>
                 <div class="mdl-layout-spacer"></div>
                 <nav class="mdl-navigation mdl-layout--large-screen-only">
                     <a class="mdl-navigation__link" href="/project_lookup.php">Справочник проектов</a>
@@ -24,7 +23,7 @@ require_once './app/functions.php';?>
             </div>
         </header>
         <div class="mdl-layout__drawer">
-            <span class="mdl-layout-title">Перенос часов в EVO</span>
+            <span class="mdl-layout-title">Перенос часов в Evo/Redmine</span>
             <nav class="mdl-navigation">
                 <a class="mdl-navigation__link" href="/project_lookup.php">Справочник проектов</a>
                 <a class="mdl-navigation__link" href="https://github.com/u-mulder/ham2evo" target="_blank">Репозиторий проекта</a>
